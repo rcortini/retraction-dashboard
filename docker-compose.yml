@@ -1,0 +1,47 @@
+services:
+  db:
+    build:
+      context: .
+      dockerfile: db.Dockerfile
+    container_name: db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: ingestion.Dockerfile
+    container_name: ingestion
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./api:/app
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard.Dockerfile
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./dashboard:/app
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
