@@ -3,9 +3,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements-ingestion.txt .
+COPY . .
 RUN pip install --no-cache-dir -r requirements-ingestion.txt
 
-COPY ./ingestion .
-
-CMD ["python", "ingest.py"]
+CMD ["python", "-m", "ingestion.ingest"]

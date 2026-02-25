@@ -1,14 +1,10 @@
 CREATE TABLE IF NOT EXISTS works (
     id TEXT PRIMARY KEY,
+    doi TEXT,
     title TEXT,
     publication_year INT,
     publication_date DATE,
-    updated_date TIMESTAMP,
-    is_retracted BOOLEAN,
-    doi TEXT,
-    -- journal TEXT,
-    -- country TEXT,
-    raw JSONB
+    updated_date TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS ingestion_metadata (

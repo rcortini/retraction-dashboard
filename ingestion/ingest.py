@@ -1,7 +1,9 @@
-from sqlalchemy import create_engine
-import os
+import os, sys
 import pandas as pd
 import requests
+
+from shared.db import create_connection, get_last_update_ts, upsert_records
+from shared.models import works
 
 # a handy function to execute queries
 def send_query(q, params={}, print_query=False):
@@ -110,20 +112,6 @@ def fix_doi(doi):
 def fix_openalex_url(url, concept=''):
     return url.replace(f"https://openalex.org/{concept}", "")
 
-def create_connection():
-    connection_url = os.environ.get("DB_CONNECTION_URL")
-    if not connection_url:
-        raise ValueError("DB_CONNECTION_URL not defined")
-    return create_engine(connection_url)
-
-def get_last_update_ts(engine):
-    query = """SELECT last_updated_date FROM ingestion_metadata ORDER BY id DESC LIMIT 1;"""
-    with engine.connect() as connection:
-        df = pd.read_sql(query, con=connection)
-    return df\
-        .at[0, "last_updated_date"]\
-        .isoformat()
-
 def main():
     # initialize a connection to the database
     engine = create_connection()
@@ -147,8 +135,18 @@ def main():
 
     # TODO: here we should implement insertion in the database
     df = process_oa_results(data_raw)
-    df.to_csv('test.csv')
-    print("FINISHED")
+    
+    fields = [
+        'id',
+        'doi',
+        'title',
+        'publication_year',
+        'publication_date',
+        'updated_date'
+    ]
+    data_df = process_oa_results(data_raw, requested_fields=fields)
+    records = list(data_df.itertuples(index=False, name=None))
+    upsert_records(engine, records)
 
 if __name__ == "__main__":
     main()
