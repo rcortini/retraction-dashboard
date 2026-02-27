@@ -124,6 +124,7 @@ def main():
     OA_API_URL = os.getenv("OA_API_URL")
     OA_API_KEY = os.getenv("OA_API_KEY")
     OA_PER_PAGE = os.getenv("OA_PER_PAGE")
+    EXEC_MODE = os.getenv("EXEC_MODE")
     if not OA_API_KEY:
         raise ValueError("OA_API_KEY is not set. You must obtain a valid API key to run\nSee https://developers.openalex.org/guides/authentication")
 
@@ -131,9 +132,12 @@ def main():
     URL = f"{OA_API_URL}/works?filter=is_retracted:true,from_updated_date:{last_update_ts}&per_page={OA_PER_PAGE}&api_key={OA_API_KEY}"
 
     # execute the request in a loop
-    data_raw = send_oa_query_full_results(URL, max_results=400)
+    if EXEC_MODE == "test":
+        data_raw = send_oa_query_full_results(URL, max_results=400)
+    else:
+        data_raw = send_oa_query_full_results(URL)
 
-    # TODO: here we should implement insertion in the database
+    # insertion in the database
     df = process_oa_results(data_raw)
     
     fields = [
@@ -144,6 +148,7 @@ def main():
         'publication_date',
         'updated_date'
     ]
+
     data_df = process_oa_results(data_raw, requested_fields=fields)
     records = list(data_df.itertuples(index=False, name=None))
     upsert_records(engine, records)

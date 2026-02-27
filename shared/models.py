@@ -15,3 +15,11 @@ works = Table(
     Column("publication_date", Date),
     Column("updated_date", TIMESTAMP),
 )
+
+ingestion_metadata = Table(
+    "ingestion_metadata",
+    metadata,
+    Column("source", String),
+    Column("last_updated_date", TIMESTAMP),
+    Column("last_run_date", TIMESTAMP)
+)

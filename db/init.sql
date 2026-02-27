@@ -7,11 +7,12 @@ CREATE TABLE IF NOT EXISTS works (
     updated_date TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS ingestion_metadata (
-    id SERIAL PRIMARY KEY,
-    last_updated_date TIMESTAMP
+CREATE TABLE ingestion_metadata (
+    source TEXT PRIMARY KEY,
+    last_updated_date TIMESTAMP NOT NULL,
+    last_run_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-INSERT INTO ingestion_metadata (last_updated_date)
-SELECT '1900-01-01'
-WHERE NOT EXISTS (SELECT 1 FROM ingestion_metadata);
+INSERT INTO ingestion_metadata (source, last_updated_date)
+VALUES ('openalex', '1900-01-01')
+ON CONFLICT (source) DO NOTHING;

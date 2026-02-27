@@ -1,7 +1,7 @@
 import os
 import pandas as pd
-from shared.models import works
-from sqlalchemy import create_engine
+from shared.models import works, ingestion_metadata
+from sqlalchemy import create_engine, text, select
 from sqlalchemy.dialects.postgresql import insert
 
 def create_connection():
@@ -11,12 +11,14 @@ def create_connection():
     return create_engine(connection_url)
 
 def get_last_update_ts(engine):
-    query = """SELECT last_updated_date FROM ingestion_metadata ORDER BY id DESC LIMIT 1;"""
-    with engine.connect() as connection:
-        df = pd.read_sql(query, con=connection)
-    return df\
-        .at[0, "last_updated_date"]\
-        .isoformat()
+    stmt = select(ingestion_metadata.c.last_updated_date).where(
+        ingestion_metadata.c.source == "openalex"
+    )
+
+    with engine.connect() as conn:
+        result = conn.execute(stmt).scalar_one()
+
+    return result.isoformat()
 
 def upsert_records(engine, records):
     stmt = insert(works).values(records)
@@ -27,11 +29,24 @@ def upsert_records(engine, records):
         if c.name != "id"
     }
 
-    stmt = stmt.on_conflict_do_update(
-        index_elements=["id"],
-        set_=update_cols,
-        where=works.c.updated_date < stmt.excluded.updated_date
-    )
-
+    max_updated_date = max(r[-1] for r in records)
     with engine.begin() as conn:
-        conn.execute(stmt)
+        # upsert records
+        upsert_stmt = stmt.on_conflict_do_update(
+            index_elements=["id"],
+            set_=update_cols,
+            where=works.c.updated_date < stmt.excluded.updated_date
+        )    
+        conn.execute(upsert_stmt)
+
+        # update the checkpoint timestamp
+        checkpoint_stmt = text("""
+            UPDATE ingestion_metadata
+            SET last_updated_date = :ts,
+                last_run_at = NOW()
+            WHERE source = 'openalex'
+        """)
+        
+        conn.execute(checkpoint_stmt, {"ts": max_updated_date})
+    
+
