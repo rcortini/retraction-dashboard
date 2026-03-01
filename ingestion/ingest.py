@@ -134,6 +134,9 @@ def main():
     # execute the request in a loop
     if EXEC_MODE == "test":
         data_raw = send_oa_query_full_results(URL, max_results=400)
+    elif EXEC_MODE == "no_ingestion":
+        print("LOG: ingestion exiting in `no_ingestion` mode")
+        return
     else:
         data_raw = send_oa_query_full_results(URL)
 
