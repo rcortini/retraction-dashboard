@@ -2,7 +2,7 @@ services:
   db:
     build:
       context: .
-      dockerfile: db.Dockerfile
+      dockerfile: db/db.Dockerfile
     container_name: db
     ports:
       - "5432:5432"
@@ -13,8 +13,7 @@ services:
   ingestion:
     build:
       context: .
-      dockerfile: ingestion.Dockerfile
-    container_name: ingestion
+      dockerfile: ingestion/ingestion.Dockerfile
     volumes:
       - .:/app
     env_file:
@@ -26,22 +25,24 @@ services:
   api:
     build:
       context: .
-      dockerfile: api.Dockerfile
+      dockerfile: api/api.Dockerfile
     ports:
       - "8000:8000"
     env_file:
       - .env
     volumes:
-      - ./api:/app
+      - .:/app
+    depends_on:
+      - db
 
   dashboard:
     build:
       context: .
-      dockerfile: dashboard.Dockerfile
+      dockerfile: dashboard/dashboard.Dockerfile
     ports:
       - "8501:8501"
     volumes:
-      - ./dashboard:/app
+      - .:/app
     depends_on:
       - api
 
